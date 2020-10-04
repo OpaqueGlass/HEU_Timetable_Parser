@@ -1,23 +1,28 @@
 function scheduleHtmlParser(html) {
     //除函数名外都可编辑
-    //传入的参数为上一步函数获取到的html
-    //可使用正则匹配
-    //可使用解析dom匹配，工具内置了$，跟jquery使用方法一样，直接用就可以了，参考：https://juejin.im/post/5ea131f76fb9a03c8122d6b9
-    //以下为示例，您可以完全重写或在此基础上更改
-    //                                 修改中，状态：尝试挨个读取并保存
-    const startTime=["08:00","08:50","09:55","10:45","11:35","13:30",
-                    "14:20","15:25","16:15","17:05","18:30","19:20","20:10"]
-    const endTime=["8:45","09:35","10:40","11:30","12:20","14:15"
-                    ,"15:05","16:10","17:00","17:50","19:15","20:05","20:55"]
-    
+    //2020-10-4修正了id，使id可以获取，不在代码中写死，以支持其他学期的导入
     const $ = cheerio.load(html);
-
-    const table_row = 
+    const $value = $('#kbtable input').attr('name');
+    var row_Count = 0;
+    var first = $('#kbtable input');
+    var first_length = first.attr("value").length;
+    console.log("first_length"+first_length);
+    let table_row = 
     ["5180478CC0C746CC94534AF06163E808-",
     "2B924210E3384CBE9A571BB503BB1E22-",
     "25BA0015D76143439BD0271B2178E1A2-",
     "0C53A76700E5489D95958B991966C069-",
     "FC68CEFDF4F4426FA780FFE0C12409ED-"]//课程表表格的行对应的id（特征部分），按大节拆分，0对应第一大节
+    //开始获取id
+    while(row_Count <= 4){
+        table_row[row_Count] = first.attr("value");
+        table_row[row_Count] = table_row[row_Count].substring(0, first_length-3);
+        console.log(table_row[row_Count]);
+        row_Count++;
+        first = first.parent().parent().next().children().next().children();
+    }
+    //获取id结束
+    console.log($('#kbtable input').parent().parent().next().children().next().children().attr("value"));
      let sections = [
         {
             "section": 1, "startTime": "08:00", "endTime": "08:45"
@@ -56,16 +61,15 @@ function scheduleHtmlParser(html) {
     for (row = 1;row<=5;row++){
         for (column = 1;column <=7;column++){
         //读取当日、该节时段的全部课程，并保存到rawData
-        console.info(row+","+column);
+        console.info("循环中...("+row+","+column+")");
         var relaventID = table_row[row-1] + column + '-2';
         console.log(relaventID);
         var relaventID2 = table_row[row-1] + column + '-1';
         let rawData=$('#' + relaventID ).text();//
         let rawSimpleData = $('#' + relaventID2).text();
-       
+        
         var  coursesInfo = rawSimpleData.split('---------------------');//拆分单个的课程信息，并保存为数组
     //21个-
-    //     console.log("We got :" + coursesInfo);
         console.log(rawSimpleData);
 
         var numOfCourse = coursesInfo.length;//总共有课程numOfClass个
@@ -74,7 +78,6 @@ function scheduleHtmlParser(html) {
         
         console.log("圈定课程信息范围"+location);
         console.info(numOfCourse);
-    //     console.log(" "+rawData+"");
         console.log(rawSimpleData=='');
         var beginwith = 0;//寻找课程名的开始位置，应当及时更新以排除上一个课的影响(不需要在以下循环中清零，只需要更新位置即可)
         while (i < numOfCourse){
@@ -164,12 +167,10 @@ function getWeek(data){
         if (several[i].indexOf('-')==-1){
             result[count]=parseInt(several[i]);
             count++;
-//             console.log(result[i]);
         }else{
-//             console.log(several[i].length);
             begin = parseInt(several[i].substring(0, several[i].indexOf('-')));
             end = parseInt(several[i].substring(several[i].indexOf('-')+1,several[i].length));
-//             console.log("begin"+begin+"end"+end);
+
             while (begin<=end){
                 result[count]=begin;
                 begin++;
@@ -238,15 +239,9 @@ function getClass(data){
         i+=2;
     }
     var result2 = new Array(count);
-//     console.log('end');
     while (result[j]!=0){
         result2[j]=sections[result[j]-1];
-//         console.log(result2[j]);
         j++;
     }
     return result2;
-}
-
-function submit(){
-
 }
