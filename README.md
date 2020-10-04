@@ -1,1 +1,0 @@
-# Xiaoai_Class_Timetable_for_HEU
