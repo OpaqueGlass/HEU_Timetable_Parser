@@ -1,5 +1,5 @@
 # HEU_Timetable_in_Xiaoai
-Last Update :2020.10.4.17:30
+Last Update :2020.11.23 23:28
 ## 更新日志
 2020-11-23 修复了issue3对应的问题，现在导入无课程地点的项目不会再卡死了。
 
