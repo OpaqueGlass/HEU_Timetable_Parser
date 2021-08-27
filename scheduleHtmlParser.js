@@ -29,8 +29,12 @@ let sections = [
 ];
 
 function scheduleHtmlParser(html) {
-    //除函数名外都可编辑
-    //2020-10-4修正了id，使id可以获取，不在代码中写死，以支持其他学期的导入
+    /**
+     * @name HEU Theory Lessons Parser
+     * @version 0.3.3
+     * @author OpaqueGlass
+     * @contact https://github.com/OpaqueGlass/HEU_Timetable_Parser/
+     */
     
     const $ = cheerio.load(html);
     const $value = $('#kbtable input').attr('name');
@@ -53,7 +57,7 @@ function scheduleHtmlParser(html) {
     }
     //获取id结束
     
-    let allInfo = new Array();
+    let allInfo = [];
     let singleInfo;
     var all = 0;
     //这里开始循环
@@ -71,9 +75,11 @@ function scheduleHtmlParser(html) {
         var modify = 0;//发现错误时，用它来移除错误
         var locid = 0;//为了避免错误，设定一个id来保存当前位置
 
-        var  coursesInfo = rawSimpleData.split('---------------------');//拆分单个的课程信息，并保存为数组//21个-
+        var  coursesInfo = rawSimpleData.split('----------------------');//拆分单个的课程信息，并保存为数组//21个-
+        console.log("拆分原文");
         console.log(rawSimpleData);
-
+        console.log("拆分后");
+        console.log(coursesInfo);
         var numOfCourse = coursesInfo.length;//总共有课程numOfClass个
         console.log("NumOfCourse"+numOfCourse);
         var location=$("#" + relaventID).find("font");
@@ -92,7 +98,23 @@ function scheduleHtmlParser(html) {
             //请注意，课程名的处理以简略课表为数据源(rawSimpleData)
             if (numOfCourse >=2){
                 //寻找(周)
-                var signal = rawSimpleData.indexOf("(周)", beginwith);
+                
+                var signal = 99999;
+                
+                var signal1 = rawSimpleData.indexOf("(单周)", beginwith);
+                if (signal1 >= 0 && signal1 < signal){
+                    signal = signal1;
+                }
+                var signal2 = rawSimpleData.indexOf("(双周)", beginwith);
+                if (signal2 >= 0 && signal2 < signal){
+                    signal = signal2;
+                }
+                var signal3 = rawSimpleData.indexOf("(周)", beginwith);
+                if (signal3 >= 0 && signal3 < signal){
+                    signal = signal3;
+                }
+             
+
                 // loc = 
                 //以(周)为基准，向前寻找非数字的项目，找到后记为课程名的结束下标
                 while (rawSimpleData.substring(signal-1,signal)[0]<=9 
@@ -116,36 +138,61 @@ function scheduleHtmlParser(html) {
             }
             //处理课程名【完】
             
-            for(locid = 0;locid<1;locid++){//如果存在数据缺失，这部分需要重新再来
+            for(locid = 0;locid<1;locid++){
                 // var testWeek = $("#" + relaventID).find("font").attr('title',"老师");
                 // console.log("测试用0"+testWeek);
                 var rawWeek = location[4*i+1+modify].children[0].data;
                 
                 console.log("获取到的原始周数信息为"+rawWeek);
                 var ripeWeek = getWeek(rawWeek);
-                //检查其返回的数据，如果是-1说明无法解析周数/节数
-
                 if (ripeWeek == -1){
-                    modify --;//无法解析周数意味着数据错位（缺失数据）减一个试试
-                    locid--;//用来返回重新判断的，js不能使用goto，而且大范围的continue会使之前的名字丢失
+                    modify --;
+                    locid--;
                     continue;
                 }
                 var rawClass = location[4*i+2+modify].children[0].data;
                 console.log("获取到原始节数信息为"+rawClass);
-                //检查其返回的数据，如果是-1说明无法解析周数/节数
+                
                 var ripeClass = getClass(rawClass);
+                var allDayLongClass = false;
                 if (ripeClass == -1){
                     modify --;
                     locid--;
                     continue;
                 }
+                console.log("所在行"+ row);
+                if (ripeClass == -2 && row > 1){
+                    console.log("【H】dayu1");
+                    console.log("已删除的全天课程@", row);
+                    allDayLongClass = true;
+                    
+                }else if (ripeClass == -2 && row == 1){//匹配全天课程失败，还原现场
+                    console.log("【H】1");
+                    allDayLongClass = true;
+                    name = name + "（疑似全天）";
+                    console.log("疑似全天课程HERE");
+                }else{
+                    ripeClass = new Array();
+                    ripeClass[0] = sections[0];
+                }
                 console.log(ripeClass);
                 day = column;
             }
             // console.log(judge(location[4*i+3+modify].children[0].data));
-            
-            if ((4*i+3+modify)>=location.length ||judge(location[4*i+3+modify].children[0].data)!="地"){//长度判定很重要，为了缺失最后一鞥导致崩溃
-                //用以检查要写为地点的字符串是不是地点，不是则填写未保存数据
+
+            if (allDayLongClass && row == 1){
+                var singalSectionArray = new Array();
+                singalSectionArray.push(sections[0])
+                singleInfo = {
+                "name": name,
+                "position": location[4*i+3+modify].children[0].data,
+                "teacher":location[4*i+0+modify].children[0].data,
+                "weeks":ripeWeek,
+                "day":column,
+                "sections":singalSectionArray
+                }
+            }else if ((4*i+3+modify)>=location.length ||judge(location[4*i+3+modify].children[0].data)!="地"){
+                
                 allInfo[all-1]=(singleInfo);
                 singleInfo = {
                 "name": name,
@@ -163,27 +210,37 @@ function scheduleHtmlParser(html) {
                 "weeks":ripeWeek,
                 "day":column,
                 "sections":getClass(rawClass)
-            }
+             }
             }
             //记为已经成功处理了一个课程
-
-            pre = singleInfo;//啊，本来是想出了问题之后用上一个数据替代的，但是上个数据也有问题，
-            allInfo[all]=(singleInfo);
-            all++;
+            if (!allDayLongClass || (allDayLongClass && row ==1)){
+                console.log("RETURN");
+                console.log(singleInfo);
+                pre = singleInfo;
+                //allInfo[all]=(singleInfo);
+                allInfo.push(singleInfo);
+                all++;
+                
+            }
             i++;
         }
-   }} //这里终止循环
-   console.log("endTime");
+        }//终止行内每列循环
+   } //这里终止循环
+   
    console.log(singleInfo);
-    return { courseInfos: allInfo ,
-        sectionsTimes:sections
-    }
+   console.log("Submit and return(END)(Allinfo showing below)");
+   console.log(allInfo);
+   let finalResult = {
+       "courseInfos": allInfo,
+       "sectionTimes": sections
+   }
+   return finalResult;
 }
 function getWeek(data){
     var i = 0;
     var count = 0;
     var begin = 0, end = 0;
-    if (judge(data)=="师" || judge(data)=="地"){//在获取课程/周数的函数中都加入了对于项目参数的判定，为了防止由于缺失上课地点而导致的崩溃
+    if (judge(data)=="师" || judge(data)=="地"){
         return -1;
     }
     var result = new Array();
@@ -217,7 +274,7 @@ function getClass(data){
     var j = 0;
     var result = new Array();
     count = 0;
-    if (judge(data)=="师" ||judge(data)=="地" ){//在获取课程/周数的函数中都加入了对于项目参数的判定，为了防止由于缺失上课地点而导致的崩溃
+    if (judge(data)=="师" ||judge(data)=="地" ){
         return -1;
     }
     while (data[i]!='节'){
@@ -228,22 +285,33 @@ function getClass(data){
             return -1;//一直循环说明判断错了，返回修正
         }
     }
+    console.log("课程内节数测试"+result.length);
+    if (result.length == 1 && result[0] == sections[0]){//检查全天课程特征项
+        console.log("该课程仅一节");
+        return -2;
+    }
     return result;
 }
 
-function judge(textt){//用来判断给定的文本是哪种类型的文本
+function judge(textt){
     var i;
-    var hasnum = 0;
+    var hasnum = 0, hasloc = 0;
+    var text_string = textt.toString();
+    if (text_string == "学院机房"){//全字符串匹配特例
+        return "地";
+    }
     for (i = 0; i<textt.length; i++){
         if (textt[i]=="周"){
             return "周";
         }else if (textt[i]=="节"){
             return "节";
-        }
+        }else if (textt[i]=="馆" || textt[i]=="场"|| textt[i]=="楼"){
+            hasloc = 1;
+            }
         if ((textt[i]>=48 && textt[i]<=57 )||(textt[i]<=9)){
             hasnum = 1;
         }
-        if (i == textt.length-1 && hasnum == 1){
+        if ((i == textt.length-1 && hasnum == 1 )|| hasloc == 1){
             return "地";
         }
         else if (i== textt.length-1 &&hasnum == 0){
