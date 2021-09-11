@@ -31,16 +31,15 @@ let sections = [
 function scheduleHtmlParser(html) {
     /**
      * @name HEU Theory Lessons Parser
-     * @version 0.3.3
+     * @version 0.4.2
+     * 
      * @author OpaqueGlass
      * @contact https://github.com/OpaqueGlass/HEU_Timetable_Parser/
      */
-    
-    const $ = cheerio.load(html);
-    const $value = $('#kbtable input').attr('name');
-    var row_Count = 0;
-    var first = $('#kbtable input');
-    var first_length = first.attr("value").length;
+    const $ = cheerio.load(html);//该代码用于使用cheerio，并导入html
+    var row_Count = 0;//为获取表格行id，使用的循环标记
+    var first = $('#kbtable input');//获取kbtable 下input元素，
+    var first_length = first.attr("value").length;//表格行id特征字段长
     let table_row = 
     ["5180478CC0C746CC94534AF06163E809-",
     "2B924210E3384CBE9A571BB503BB1E22-",
@@ -49,185 +48,117 @@ function scheduleHtmlParser(html) {
     "FC68CEFDF4F4426FA780FFE0C12409ED-"]//课程表表格的行对应的id（特征部分），按大节拆分，0对应第一大节
     //开始获取id
     while(row_Count <= 4){
-        table_row[row_Count] = first.attr("value");
-        table_row[row_Count] = table_row[row_Count].substring(0, first_length-3);
+        //获取特征id（位于属性value中），并截取掉变化的部分
+        table_row[row_Count] = first.attr("value").substring(0, first_length-3);
+        //table_row[row_Count] = table_row[row_Count].substring(0, first_length-3);//赘余行
         console.log(table_row[row_Count]);
         row_Count++;
-        first = first.parent().parent().next().children().next().children();
+        //请尝试替换aaa，考虑使用
+        first = first.parent().parent().next().children().next().children();//转移到下一个first元素
     }
     //获取id结束
-    
-    let allInfo = [];
-    let singleInfo;
-    var all = 0;
+    console.log("获取id结束");
+    /*  变量声明 */
+    let allInfo = [];//最后的信息交到这里
+    let singleInfo;//这里临时保存
+    var all = 0;//导入课程计数
+    var seemsNumofLesson = 0;
+    var seemsLessonsLength = 0
+        //调试时设定的初始值
+    var row = 4;//大节号
+    var column = 2;//星期x/
+    /* 变量声明结束 */
     //这里开始循环
-    var row = 3;//大节号
-    var column = 4;//星期x
-    for (row = 1;row<=5;row++){
-        for (column = 1;column <=7;column++){
-        //读取当日、该节时段的全部课程，并保存到rawData
-        var pre;
-        console.info("循环中...("+row+","+column+")");
-        var relaventID = table_row[row-1] + column + '-2';
-        var relaventID2 = table_row[row-1] + column + '-1';
-        let rawData=$('#' + relaventID ).text();//
-        let rawSimpleData = $('#' + relaventID2).text();
-        var modify = 0;//发现错误时，用它来移除错误
-        var locid = 0;//为了避免错误，设定一个id来保存当前位置
+    for (row = 1;row <= 5;row++){
+        for (column = 1;column <= 7;column++){
+        //读取当日、该节时段的全部课程
+        console.group("("+row+","+column+")");
+        console.info("第"+row+"大节，星期"+column);
+        console.group("大节基本信息");
+        //获取本行id，-2为详细的课程信息
+        var relaventID = table_row[row-1] + column + '-2';//详
+        //获取本日本节中全部的课程源数据
+        let newRawData = $('#' + relaventID ).toArray()[0];
 
-        var  coursesInfo = rawSimpleData.split('----------------------');//拆分单个的课程信息，并保存为数组//21个-
-        console.log("拆分原文");
-        console.log(rawSimpleData);
-        console.log("拆分后");
-        console.log(coursesInfo);
-        var numOfCourse = coursesInfo.length;//总共有课程numOfClass个
-        console.log("NumOfCourse"+numOfCourse);
-        var location=$("#" + relaventID).find("font");
-        var i = 0;
+        newRawData = newRawData.children;//尝试缩减代码
+        let lengthRD = newRawData.length;
+        console.log("详细课程信息数组");
+        console.log(newRawData);
         
-        var beginwith = 0;//寻找课程名的开始位置，应当及时更新以排除上一个课的影响(不需要在以下循环中清零，只需要更新位置即可)
-        while (i < numOfCourse){
-            var countii = 0;
-           //在这里判定跳出
-           console.log("正在判断格内课程："+i+" / "+numOfCourse);
-           console.log(location);
-           if ($("#" + relaventID).attr('title',"老师").text().length==1){
-               break;
-           }
-            //处理课程名【已经无法独立出来了】
-            //请注意，课程名的处理以简略课表为数据源(rawSimpleData)
-            if (numOfCourse >=2){
-                //寻找(周)
-                
-                var signal = 99999;
-                
-                var signal1 = rawSimpleData.indexOf("(单周)", beginwith);
-                if (signal1 >= 0 && signal1 < signal){
-                    signal = signal1;
+        //该代码无法判断多于5节课的情况，因此之后安排了修正
+        //这里将课程按照10元素记录了，但多课程引入了2元素的---分隔，所以课程记录数是偏多的
+        //当课程数大于5时，开始出错（bug已修复）
+        seemsNumofLesson = Math.floor(lengthRD / 10);
+        console.log("认定含有课程x节：" + seemsNumofLesson);
+        seemsLessonsLength = seemsNumofLesson * 10 + (seemsNumofLesson - 1) * 2;
+        //console.log(newRawData.length == seemsLessonsLength);
+        console.log(lengthRD + " " + seemsLessonsLength);
+        console.groupEnd();
+        //判定跳出（无课程）
+        if (lengthRD == 1){
+            console.groupEnd();
+            if (column == 7) console.groupEnd();
+            continue;
+        }//如果无课程，跳过
+        //检查课程长度和已知是否一致
+        if (lengthRD != seemsLessonsLength){
+            console.log("认定本组课程信息缺失或课程数判断错误");
+            //由于我们将课程长按10记录，实际除了第一个为12，因此课程记录偏多，这里用j--
+            for (let j = seemsNumofLesson; j > 1; j--){
+                //找到符合条件的课程数，使得其匹配现在的情况
+                if ((j * 10 + (j - 1) * 2) == lengthRD){
+                    seemsNumofLesson = j;
+                    break;
                 }
-                var signal2 = rawSimpleData.indexOf("(双周)", beginwith);
-                if (signal2 >= 0 && signal2 < signal){
-                    signal = signal2;
-                }
-                var signal3 = rawSimpleData.indexOf("(周)", beginwith);
-                if (signal3 >= 0 && signal3 < signal){
-                    signal = signal3;
-                }
-             
-
-                // loc = 
-                //以(周)为基准，向前寻找非数字的项目，找到后记为课程名的结束下标
-                while (rawSimpleData.substring(signal-1,signal)[0]<=9 
-                && rawSimpleData.substring(signal-1,signal)[0]>=0 
-                || rawSimpleData.substring(signal-1,signal)[0]=='-'
-                || rawSimpleData.substring(signal-1,signal)[0]==',' ){
-                    signal--;
-                }
-                var name = rawSimpleData.substring(beginwith,signal);
-                beginwith = rawSimpleData.indexOf("---------------------", beginwith)+22;//设定下一项寻找位置
-                console.log("name=="+name);
-            }else if (numOfCourse == 1){
-                var signal = rawSimpleData.indexOf("(周)");//周字的位置，方便定位
-                while (rawSimpleData.substring(signal-1,signal)[0]<=9 
-                && rawSimpleData.substring(signal-1,signal)[0]>=0 
-                || rawSimpleData.substring(signal-1,signal)[0]=='-'
-                || rawSimpleData.substring(signal-1,signal)[0]==',' ){
-                    signal--;
-                }
-                var name = rawSimpleData.substring(0,signal);
             }
-            //处理课程名【完】
-            
-            for(locid = 0;locid<1;locid++){
-                // var testWeek = $("#" + relaventID).find("font").attr('title',"老师");
-                // console.log("测试用0"+testWeek);
-                var rawWeek = location[4*i+1+modify].children[0].data;
-                
-                console.log("获取到的原始周数信息为"+rawWeek);
-                var ripeWeek = getWeek(rawWeek);
-                if (ripeWeek == -1){
-                    modify --;
-                    locid--;
-                    continue;
-                }
-                var rawClass = location[4*i+2+modify].children[0].data;
-                console.log("获取到原始节数信息为"+rawClass);
-                
-                var ripeClass = getClass(rawClass);
-                var allDayLongClass = false;
-                if (ripeClass == -1){
-                    modify --;
-                    locid--;
-                    continue;
-                }
-                console.log("所在行"+ row);
-                if (ripeClass == -2 && row > 1){
-                    console.log("【H】dayu1");
-                    console.log("已删除的全天课程@", row);
-                    allDayLongClass = true;
-                    
-                }else if (ripeClass == -2 && row == 1){//匹配全天课程失败，还原现场
-                    console.log("【H】1");
-                    allDayLongClass = true;
-                    name = name + "（疑似全天）";
-                    console.log("疑似全天课程HERE");
-                }else{
-                    ripeClass = new Array();
-                    ripeClass[0] = sections[0];
-                }
-                console.log(ripeClass);
-                day = column;
-            }
-            // console.log(judge(location[4*i+3+modify].children[0].data));
-
-            if (allDayLongClass && row == 1){
-                var singalSectionArray = new Array();
-                singalSectionArray.push(sections[0])
-                singleInfo = {
-                "name": name,
-                "position": location[4*i+3+modify].children[0].data,
-                "teacher":location[4*i+0+modify].children[0].data,
-                "weeks":ripeWeek,
-                "day":column,
-                "sections":singalSectionArray
-                }
-            }else if ((4*i+3+modify)>=location.length ||judge(location[4*i+3+modify].children[0].data)!="地"){
-                
-                allInfo[all-1]=(singleInfo);
-                singleInfo = {
-                "name": name,
-                "position": "抱歉，未找到数据",
-                "teacher":location[4*i+0+modify].children[0].data,
-                "weeks":ripeWeek,
-                "day":column,
-                "sections":getClass(rawClass)
-            }
-            }else{
-                singleInfo = {
-                "name": name,
-                "position": location[4*i+3+modify].children[0].data,
-                "teacher":location[4*i+0+modify].children[0].data,
-                "weeks":ripeWeek,
-                "day":column,
-                "sections":getClass(rawClass)
-             }
-            }
-            //记为已经成功处理了一个课程
-            if (!allDayLongClass || (allDayLongClass && row ==1)){
-                console.log("RETURN");
-                console.log(singleInfo);
-                pre = singleInfo;
-                //allInfo[all]=(singleInfo);
-                allInfo.push(singleInfo);
-                all++;
-                
-            }
-            i++;
+            seemsLessonsLength = seemsNumofLesson * 10 + (seemsNumofLesson - 1) * 2;
         }
+        //检查上面的循环是否修正了错误
+        if (lengthRD != seemsLessonsLength){
+            console.error("课程长度判断错误。");
+            return 0;
+        }
+        for (let i = 0; i < seemsNumofLesson; i++){
+            let lname = newRawData[12 * i + 0].data;
+            let lteacher = (newRawData[12 * i + 2].children == undefined)?"未知":newRawData[12 * i + 2].children[0].data;
+            let lweek = newRawData[12 * i + 4].children[0].data;
+            let lduring = newRawData[12 * i + 6].children[0].data;
+            let llocation = (newRawData[12 * i + 8].children == undefined)?"未知":newRawData[12 * i + 8].children[0].data;
+            
+            console.group("同节不同周-第" + (i + 1) + "个课");
+            console.log("课程名：" + lname);
+            console.log("教师；" + lteacher);
+            console.log("周次：" + lweek);
+            console.log("节次：" + lduring);
+            console.log("教室：" + llocation);
+            let lsection = getSections(lduring);
+            if (lsection == -2) console.info(">>全天课程<<");
+            if (lsection == -2 && row == 1){
+                lname += "(疑似全天)";
+                lsection = [sections[0]];
+            }
+            console.groupEnd();
+            if (lsection == -2 && row >1){
+                console.log("重复的全天课程不导入");
+                continue;
+            }
+            singleInfo = {
+                "name": lname,
+                "position": llocation,
+                "teacher": lteacher,
+                "weeks": getWeek(lweek),
+                "day": column,
+                "sections": lsection
+            }
+            allInfo.push(singleInfo);
+            console.log(singleInfo);
+        }
+
+        console.groupEnd();
         }//终止行内每列循环
-   } //这里终止循环
+   } //这里终止行循环
    
-   console.log(singleInfo);
+   //console.log(singleInfo);
    console.log("Submit and return(END)(Allinfo showing below)");
    console.log(allInfo);
    let finalResult = {
@@ -236,15 +167,16 @@ function scheduleHtmlParser(html) {
    }
    return finalResult;
 }
+
+
 function getWeek(data){
     var i = 0;
     var count = 0;
     var begin = 0, end = 0;
-    if (judge(data)=="师" || judge(data)=="地"){
-        return -1;
-    }
     var result = new Array();
-    data = data.substring(0,data.length-3);
+    data = data.replace("(周)", "");
+    data = data.replace("(单周)", "");
+    data = data.replace("(双周)", "");
     var several = data.split(',');
     i = 0;
     while (i < several.length){
@@ -266,7 +198,7 @@ function getWeek(data){
     return result;
 }
 
-function getClass(data){
+function getSections(data){
 
     console.log(data);
     var i = 1;
@@ -274,9 +206,6 @@ function getClass(data){
     var j = 0;
     var result = new Array();
     count = 0;
-    if (judge(data)=="师" ||judge(data)=="地" ){
-        return -1;
-    }
     while (data[i]!='节'){
         result[count]=sections[parseInt(data.substring(i,i+2))-1];
         count++;
@@ -291,32 +220,4 @@ function getClass(data){
         return -2;
     }
     return result;
-}
-
-function judge(textt){
-    var i;
-    var hasnum = 0, hasloc = 0;
-    var text_string = textt.toString();
-    if (text_string == "学院机房"){//全字符串匹配特例
-        return "地";
-    }
-    for (i = 0; i<textt.length; i++){
-        if (textt[i]=="周"){
-            return "周";
-        }else if (textt[i]=="节"){
-            return "节";
-        }else if (textt[i]=="馆" || textt[i]=="场"|| textt[i]=="楼"){
-            hasloc = 1;
-            }
-        if ((textt[i]>=48 && textt[i]<=57 )||(textt[i]<=9)){
-            hasnum = 1;
-        }
-        if ((i == textt.length-1 && hasnum == 1 )|| hasloc == 1){
-            return "地";
-        }
-        else if (i== textt.length-1 &&hasnum == 0){
-            return "师";
-        }
-
-    }
 }
