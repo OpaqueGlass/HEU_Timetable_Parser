@@ -1,8 +1,11 @@
 # HEU_Timetable_Parser_in_Xiaoai
 Last Update :2022.02.13 9:00
 
-> **说明** 由于访问GitHub变得愈加困难，在GitHub的更新可能会暂时中断，你可以访问[Gitee仓库副本](https://gitee.com/opaqueglass/HEU_Timetable_Parser)获取WiKi更新和部分代码更新。谢谢关注。
-> **临期说明** 项目已经基本完成了强智3教务的课表导入适配工作，本次（第五版）新增冲突课程（上课时间冲突）处理功能（只保留一个或强制显示）后，项目将暂停维护，谢谢关注。
+> **说明** 由于访问GitHub变得愈加困难，在GitHub的更新可能会暂时中断，你可以访问[Gitee仓库副本](https://gitee.com/opaqueglass/HEU_Timetable_Parser)获取WiKi更新和部分代码更新。
+> 
+> **临期说明** 项目已经基本完成了强智3教务的课表导入适配工作，本次（第五版）新增上课时间冲突课程处理功能（具体处理方案请见Gitee仓库Wiki）后，项目将暂停维护。
+>
+>谢谢关注。
 
 ## 更新日志
 
