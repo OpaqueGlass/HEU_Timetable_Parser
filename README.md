@@ -1,5 +1,6 @@
 # HEU_Timetable_Parser_in_Xiaoai
-Last Update :2022.02.16 11:00
+
+Last Update: See git log.日志更新时间参考git日志。 
 
 > **说明** 由于访问GitHub变得愈加困难，在GitHub的更新可能会暂时中断，你可以访问[Gitee仓库副本](https://gitee.com/opaqueglass/HEU_Timetable_Parser)获取WiKi更新。
 > 
