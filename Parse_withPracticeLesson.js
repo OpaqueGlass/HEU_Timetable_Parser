@@ -1,18 +1,25 @@
 function scheduleHtmlParser(html){
     /**
      * @name HEU Theoretics and Practice Lessons Parser
-     * @version 0.2.3(220215)
-     * @detail 本次更新了冲突检查机制
+     * @version 0.2.6(2022-2-28)
      * @author OpaqueGlass
      * @contact https://github.com/OpaqueGlass/HEU_Timetable_Parser/
      */
+
     let errorReport = [{
         name: "抱歉，处理课程信息失败(。﹏。*)",
         position: "",
         teacher: "如果可以，请将错误信息发送给开发者",
-        weeks: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+        weeks: [1,2,3,4,5],
         day: 1,
-        sections: [1,2,3,4,5,6,7,8,9,10,11,12]
+        sections: [1,2,3,4,5]
+    },{
+        name: "BUG反馈给",
+        position: "1354457997@",
+        teacher: "qq.com。",
+        weeks: [1,2,3,4,5],
+        day: 2,
+        sections: [1,2,3,4,5]
     }];
     try{
     /*检测并处理工程时间课程顺延请求 */
@@ -100,9 +107,7 @@ function theoreticsScheduleHtmlParser(html, havePra) {
     console.log("获取id结束");
     /*  变量声明 */
     let allInfo = [];//最后的信息交到这里
-    let singleInfo;//这里临时保存
-    var seemsNumofLesson = 0;
-    var seemsLessonsLength = 0
+    let moreSections = [[0], [1, 2], [3, 4, 5], [6, 7], [8, 9, 10], [11, 12, 13]];//大节所包含的小节
         //调试时设定的初始值
     var row = 4;//大节号
     var column = 2;//星期x/
@@ -113,98 +118,94 @@ function theoreticsScheduleHtmlParser(html, havePra) {
         //读取当日、该节时段的全部课程
         console.group("("+row+","+column+")");
         console.info("第"+row+"大节，星期"+column);
-        console.group("大节基本信息");
+        console.info("大节基本信息");
         //获取本行id，-2为详细的课程信息
         var relaventID = table_row[row-1] + column + '-2';//详
-        var relaventID2 = table_row[row-1] + column + '-1';//略
-        let rawData=$('#' + relaventID ).text();//复杂信息原文
-        let rawSimpleData = $('#' + relaventID2).text();//简明信息原文
+
         //获取本日本节中全部的课程源数据
         let newRawData = $('#' + relaventID ).toArray()[0];
-        let newRawSimpleData = $('#' + relaventID2).toArray();
+
 
         newRawData = newRawData.children;//尝试缩减代码
         let lengthRD = newRawData.length;
         console.log("详细课程信息数组");
         console.log(newRawData);
         
-        //该代码无法判断多于5节课的情况，因此之后安排了修正
-        //这里将课程按照10元素记录了，但多课程引入了2元素的---分隔，所以课程记录数是偏多的
-        //当课程数大于5时，开始出错（bug已修复）
-        seemsNumofLesson = Math.floor(lengthRD / 10);
-        console.log("认定含有课程x节：" + seemsNumofLesson);
-        seemsLessonsLength = seemsNumofLesson * 10 + (seemsNumofLesson - 1) * 2;
-        //console.log(newRawData.length == seemsLessonsLength);
-        console.log(lengthRD + " " + seemsLessonsLength);
-        console.groupEnd();
         //判定跳出（无课程）
         if (lengthRD == 1){
             console.groupEnd();
             if (column == 7) console.groupEnd();
             continue;
         }//如果无课程，跳过
-        //检查课程长度和已知是否一致
-        if (lengthRD != seemsLessonsLength){
-            console.log("认定本组课程信息缺失或课程数判断错误");
-            //由于我们将课程长按10记录，实际除了第一个为12，因此课程记录偏多，这里用j--
-            for (let j = seemsNumofLesson; j > 1; j--){
-                //找到符合条件的课程数，使得其匹配现在的情况
-                if ((j * 10 + (j - 1) * 2) == lengthRD){
-                    seemsNumofLesson = j;
-                    break;
+        //空白课程对象，注意，星期，节次已经设定了值
+        let nullInfo = {
+            name: "未知",
+            position: "未知",
+            teacher: "未知",
+            weeks: [0],
+            day: column,
+            sections: [0],
+            C01: 0,//配合查重的新增项，用于记录本课程冲突类型C01（对应的冲突次数）
+            C02: 0,
+            C11: 0,
+            C21: 0,
+            C31: 0
+        }
+        let collecting = Object.assign({}, nullInfo);//新找到的内容填在这里
+        for (k in newRawData){
+            
+            // console.log("此行信息", newRawData[k]);
+            // console.log("类型",newRawData[k].type);
+            if (newRawData[k].type == "text" && newRawData[k].data.indexOf("-----------") == -1){
+                collecting.name = newRawData[k].data;
+                console.group(row + "大节内课程");
+                console.log("获取到课程名", collecting.name);
+            }
+            if (newRawData[k].type == "tag" && newRawData[k].name =="font"){
+                console.log(newRawData[k].attribs.title);
+                switch (newRawData[k].attribs.title){
+                    case "老师":
+                    case "教师": 
+                        if (newRawData[k].children == undefined)break;
+                        collecting.teacher = newRawData[k].children[0].data;
+                        console.log("获得教师信息：", collecting.teacher);
+                        break;
+                    case "周次":
+                        if (newRawData[k].children == undefined)break;
+                        collecting.weeks = getWeeks(newRawData[k].children[0].data);
+                        console.log("获得周次信息：", collecting.weeks);
+                        break;
+                    case "教室":
+                    case "地点":
+                        if (newRawData[k].children == undefined)break;
+                        collecting.position = newRawData[k].children[0].data;
+                        break;
+                    case "节次":
+                        if (newRawData[k].children == undefined)break;
+                        collecting.sections = getSections(newRawData[k].children[0].data);
+                        console.log("获取到节次：", collecting.sections);
+                        if (collecting.sections.length == 1){
+                            console.log("课程数只有一个小节，认为需要课程扩展为整个大节");
+                            collecting.sections = moreSections[row];
+                            collecting.name = collecting.name;//标注Ex，这个东西可能只能提前标注
+                        }
+                        break;
                 }
             }
-            seemsLessonsLength = seemsNumofLesson * 10 + (seemsNumofLesson - 1) * 2;
+            if (k == newRawData.length - 1 || (newRawData[k].type == "text" && newRawData[k].data.indexOf("-----------") != -1)){
+                //提交课程信息，另外，循环完了也要提交
+                if (collecting.name.indexOf("工程实践") != -1 && havePra){
+                    collecting = Object.assign({}, nullInfo);
+                    console.groupEnd();
+                    continue;//若有工程实践，本课程移除，不加入
+                }
+                console.log("提交本次内容，创建新的结构，读取下一组课程信息", collecting);
+                allInfo.push(collecting);
+                collecting = Object.assign({}, nullInfo);
+                console.groupEnd();
+            }
+            //console.log();
         }
-        //检查上面的循环是否修正了错误
-        if (lengthRD != seemsLessonsLength){
-            console.error("课程长度判断错误。");
-            return 0;
-        }
-        for (let i = 0; i < seemsNumofLesson; i++){
-            let lname = newRawData[12 * i + 0].data;
-            let lteacher = (newRawData[12 * i + 2].children == undefined)?"未知":newRawData[12 * i + 2].children[0].data;
-            let lweek = newRawData[12 * i + 4].children[0].data;
-            let lduring = newRawData[12 * i + 6].children[0].data;
-            let llocation = (newRawData[12 * i + 8].children == undefined)?"未知":newRawData[12 * i + 8].children[0].data;
-            
-            console.group("同节不同周-第" + (i + 1) + "个课");
-            console.log("课程名：" + lname);
-            console.log("教师；" + lteacher);
-            console.log("周次：" + lweek);
-            console.log("节次：" + lduring);
-            console.log("教室：" + llocation);
-            let lsection = getSections(lduring);
-            if (lsection == -2) console.info(">>全天课程<<");
-            if (lsection == -2 && row == 1){
-                lname += "(疑似全天)";
-                lsection = [1];
-            }
-            console.groupEnd();
-            if (lsection == -2 && row >1){
-                console.log("重复的全天课程不导入");
-                continue;
-            }
-            if (lname == "工程实践(疑似全天)" && havePra){//如果有工程实践课详细信息，则不导入工程实践课
-                console.log("不再导入工程实践课程");
-                continue;
-            }
-            singleInfo = {
-                "name": lname,
-                "position": llocation,
-                "teacher": lteacher,
-                "weeks": getWeeks(lweek),
-                "day": column,
-                "sections": lsection,
-                "C01": 0,//配合查重的新增项，用于记录本课程冲突类型C01（对应的冲突次数）
-                "C02": 0,
-                "C11": 0,
-                "C21": 0
-            }
-            allInfo.push(singleInfo);
-            console.log(singleInfo);
-        }
-
         console.groupEnd();
         }//终止行内每列循环
    } //这里终止行循环
@@ -217,34 +218,61 @@ function theoreticsScheduleHtmlParser(html, havePra) {
 }
 
 
-function getWeeks(data){
+function getWeeks(data) {
     var i = 0;
     var count = 0;
-    var begin = 0, end = 0;
+    var begin = 0,
+        end = 0;
     var result = new Array();
     data = data.replace("(周)", "");
-    // data = data.replace("(单周)", "");
-    // data = data.replace("(双周)", "");
+    /* 单双周处理测试 */
+    var singleWeek = 0;//0：正常 1：单周 2：双周
+    //单双周课程处理，支持处理1-5(单周)等
+    if (data.indexOf("单周") != -1){
+        singleWeek = 1;
+        data = data.replace("(单周)", "");
+        console.log("是单周");
+    }else if (data.indexOf("双周") != -1){
+        singleWeek = 2;
+        data = data.replace("(双周)", "");
+        console.log("是双周");
+    }
     var several = data.split(',');
     i = 0;
-    while (i < several.length){
-        if (several[i].indexOf('-')==-1){
-            result[count]=parseInt(several[i]);
+    console.log("拆分,后", several);
+    while (i < several.length) {
+        if (several[i].indexOf('-') == -1) {
+            result[count] = parseInt(several[i]);
             count++;
-        }else{
+        } else {
             begin = parseInt(several[i].substring(0, several[i].indexOf('-')));
-            end = parseInt(several[i].substring(several[i].indexOf('-')+1,several[i].length));
+            end = parseInt(several[i].substring(several[i].indexOf('-') + 1, several[i].length));
 
-            while (begin<=end){
-                result[count]=begin;
+            while (begin <= end) {
+                
+                switch (singleWeek){
+                    case 0: 
+                        result[count] = begin;
+                        count++;
+                        break;
+                    
+                    case 1: 
+                        if (begin % 2 != 0){
+                            result[count] = begin;
+                            count++;
+                        }
+                        break;
+                    case 2:
+                        if (begin % 2 == 0){
+                            result[count] = begin;
+                            count++;
+                        }
+                }
                 begin++;
-                count++;
             }
         }
         i++;
     }
-    console.log("getWeeks 函数返回");
-    console.log(result);
     return result;
 }
 
@@ -272,7 +300,7 @@ function getSections(data) {
     console.log("课程内节数测试" + result.length);
     if (result.length == 1 && result[0] == 1) { //检查全天课程特征项
         console.log("该课程仅一节");
-        return -2;
+        //return -2;
     }
     
     return result;
@@ -366,7 +394,8 @@ function practiceScheduleHtmlParser(html,matchres) {
                 "C01": 0,
                 "C02": 0,
                 "C11": 0,
-                "C21": 0
+                "C21": 0,
+                "C31": 0
             }
             allClassInfo_fin.push(singleInfo);
             singleInfo = {
@@ -379,7 +408,8 @@ function practiceScheduleHtmlParser(html,matchres) {
                 "C01": 0,
                 "C02": 0,
                 "C11": 0,
-                "C21": 0
+                "C21": 0,
+                "C31": 0
             }
             allClassInfo_fin.push(singleInfo);
             console.log("PUSHED，解析到一节课程信息：");
@@ -424,7 +454,7 @@ function getPosition(rawPostion){
  * @judge 判断条件：星期一致，周次有所重合，节次有所重合。
  * @return 对于存在重合的课程，靠后出现的删除重合部分后导入
  */
- function mergeConflictCourse(rawResult) {
+function mergeConflictCourse(rawResult) {
     let removeId = [];
     console.log("开始检查冲突课程...");
     //对每一个课程信息，都进行查重
@@ -435,7 +465,7 @@ function getPosition(rawPostion){
         console.log(rawResult[k]);
         //倒查重复开始：【动作：发现重复，产出本课程的重复项，检查节次、周次是否为空，其一为空不导入】
         //只查10个的前提，导入的课程信息数组是按照天聚集排布的
-        for (let j = k - 1; j >= k - 10 && j >= 0; j--) {
+        for (let j = k - 1; j >= 0 && j >= 0; j--) {
             console.info("与课程"+j+"比对");
             console.log(rawResult[j]);
             let temp_now_toins = rawResult[k];//移动了一下位置，如果更改了就用最新的
@@ -459,7 +489,7 @@ function getPosition(rawPostion){
 
             /*【处理周次部分重叠】将两个课程中不冲突的周次拆出另成课程对象*/
             if (weeksCompareRes.result == 1 || weeksCompareRes.result == 3){
-                newCourseTemp = temp_alreadyExist;
+                newCourseTemp = Object.assign({}, temp_alreadyExist);
                 if (weeksCompareRes.uniqueArr1 == 0){
                     console.error("数组查重不对，不该是空数组");
                     throw new Error("数组查重出错");
@@ -472,7 +502,7 @@ function getPosition(rawPostion){
             }
             if (weeksCompareRes.result == 2|| weeksCompareRes.result == 3){
                 //和上面的代码差不多，区别是加入的课程是已存在的还是待查重的
-                newCourseTemp = temp_now_toins;
+                newCourseTemp = Object.assign({}, temp_now_toins);
                 if (weeksCompareRes.uniqueArr2 == 0){
                     console.error("数组查重不对，不该是空数组");
                     throw new Error("数组查重出错");
@@ -485,7 +515,7 @@ function getPosition(rawPostion){
 
             /*【处理节次部分重叠】至此，已经改为课程全部周次存在冲突（不冲突的周已经拆出）*/
             if (sectionsCompareRes.result == 1 || sectionsCompareRes.result == 3){
-                newCourseTemp = temp_alreadyExist;
+                newCourseTemp = Object.assign({}, temp_alreadyExist);
                 if (sectionsCompareRes.uniqueArr1 == 0){
                     console.error("数组查重不对，不该是空数组");
                     throw new Error("数组查重出错");
@@ -497,7 +527,7 @@ function getPosition(rawPostion){
                 temp_alreadyExist.sections = sectionsCompareRes.sameArr;//同步为节次全部冲突情况
             }
             if (sectionsCompareRes.result == 2|| sectionsCompareRes.result == 3){
-                newCourseTemp = temp_now_toins;
+                newCourseTemp = Object.assign({}, temp_now_toins);
                 if (sectionsCompareRes.uniqueArr2 == 0){
                     console.error("数组查重不对，不该是空数组");
                     throw new Error("数组查重出错");
@@ -530,8 +560,8 @@ function getPosition(rawPostion){
         if (rawResult[a].C11 > 0){
             rawResult[a].name = "C11>" + rawResult[a].name;
         }
-        if (rawResult[a].C21 > 0){
-            rawResult[a].name = "C21>" + rawResult[a].name;
+        if (rawResult[a].C31 > 0){
+            rawResult[a].name = "C31>" + rawResult[a].name;
         }
         //如果当前判断元素在删除列表中，则删除该元素
         //将原数组下标和待删除下标做比对，因此，删除removeId数组允许重复赘余
@@ -620,22 +650,14 @@ function sameWeekSection(temp_alreadyExist, temp_now_toins, removeId, k){
         console.log("课程不一致：确实冲突");
         //处理方式：先导入的课程占据共有时间的第一个小节，后导入的课程占据共有时间的其他小节
         //若导入的课程只占据一个小节，后导入的课程删除。
-        if (temp_now_toins.sections.length >= 2){
-            //先导入的课程只保留第一个小节
-            temp_alreadyExist.sections = [temp_alreadyExist.sections[0]];
-            //找到后导入的课程除了第一个小节是啥，将后面的小节更新给后导入的课程
-            let temp_json = existSameComponent(temp_alreadyExist.sections,temp_now_toins.sections);
-            temp_now_toins.sections = temp_json.uniqueArr2;
-            temp_alreadyExist.C11++;
-            temp_now_toins.C11++;
-            console.log("C11:强制显示两个课程于同一大节");
-            // continue;
-        }else{
-            console.log("C21:两个课程只有一个小节，还冲突了，只保留一个");
-            removeId.push(k);//正在加入k课程，发现和之前的冲突，k课程不添加
-            temp_alreadyExist.C21++;
-            // continue;
-        }
+        //尝试合并
+        temp_alreadyExist.name += "|" + temp_now_toins.name;
+        temp_alreadyExist.teacher += "|" + temp_now_toins.teacher;
+        temp_alreadyExist.position += "|" + temp_now_toins.position;
+        console.log("C31:两个课程只有一个小节，还冲突了，尝试合并");
+        removeId.push(k);//正在加入k课程，发现和之前的冲突，k课程不添加
+        temp_alreadyExist.C31++;
+        // continue;
     }
 
     return {
