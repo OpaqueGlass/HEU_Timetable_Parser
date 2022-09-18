@@ -4,11 +4,10 @@
 
 ## 最近更新
 
-2022-8-14 v0.5.0
+2022-9-18 JZJW v0.0.1
 
-- 修复：冲突课程检查拆课错误，拆分出的课程周数不正确；
-- 改进：根据导入时间判断导入哪学期的理论课表；
-- 重构：部分代码逻辑重构；
+- 新增：尝试适配新教务系统；
+  - 不支持：单/双周课程、工程实践课程
 
 ## 概述
 
@@ -30,6 +29,8 @@ https://github.com/Holit/HEU_edusys_miui
 -  Parse_5lesson.js 按大节解析理论课表
 -  Provider.js 截取课表网页内容
 -  Provider_withPracticeLesson.js 截取课表网页内容、请求理论课表
+-  Parser_JZJW.js 解析教务系统返回的课程信息（2022金智教务）
+-  Provider_JZJW.js 向教务系统发送POST请求课程信息（2022金智教务）
 -  README.md 说明文档
 ```
 
@@ -61,6 +62,8 @@ https://www.cnblogs.com/holittech/p/miui_schedule_document.html
 https://github.com/Holit/HEU_edusys_miui
 
 ## 更新日志
+
+2022-9-18 尝试适配新教务系统（金智教务）。
 
 2022-8-14 课表分析器修复拆课周数错误问题，改进：开学前获取的是上学期的理论课表。
 
