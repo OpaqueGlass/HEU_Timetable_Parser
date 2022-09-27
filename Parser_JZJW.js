@@ -50,7 +50,6 @@ function scheduleHtmlParser(html) {
 
 function getWeeks(info){
     let data = info.ZCMC;
-    if (data.indexOf("单") != -1 || data.indexOf("双") != -1) throw Error("单双周处理时出错" + info.ZCMC);
     let result = new Array();
     let splitdata = data.split(",");
     splitdata.forEach((current)=>{

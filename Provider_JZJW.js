@@ -9,9 +9,11 @@ async function scheduleHtmlProvider() {
     let classInfos = new Array();
     try{
         await AIScheduleAlert({
-            titleText: '', 
-            contentText: `谢谢使用与关注。请您理解，导入时将发送网络请求获取课表，因此如果课程较多，需要等待一段时间，大概少于1分钟；
-            另外，由于没有足够的样本，此项目可能无法适配您的课表。本课表导入项目开源地址：https://github.com/OpaqueGlass/HEU_Timetable_Parser。`, 
+            titleText: '提示', 
+            contentText: `导入时将发送网络请求获取课表（而不使用当前网页获取）；如果课程较多，需要等待一段时间，大概少于1分钟；
+            请您理解，由于课表多样，此项目可能无法适配您的课表。
+            如遇到问题，您可以通过QQ联系开发者反馈，1354457997（请附上课程列表截图和错误信息）。感谢使用。
+            本课表导入项目开源地址：https://github.com/OpaqueGlass/HEU_Timetable_Parser。`, 
             confirmText: '确认', 
         });
         //开发者测试用，否则默认请求当前学期课表
@@ -39,12 +41,12 @@ async function scheduleHtmlProvider() {
         console.error(err);
         await AIScheduleAlert({
             titleText: '获取课程时发生错误',
-            contentText: err,
+            contentText: "如果可以，请将错误信息和课表发送给开发者（Q1354457997）："+err,
             confirmText: '确认',
         });
         return "do not continue"
     }
-    console.log(classInfos);
+    // console.log(classInfos);
     return JSON.stringify(classInfos);
   }
 
@@ -80,16 +82,18 @@ async function getOnePage(pageNum, term){
         "headers": {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         },
-        "body": `XNXQDM=${term}&pageSize=20&pageNumber=${pageNum}`
+        "body": `XNXQDM=${term}&pageSize=40&pageNumber=${pageNum}`
     });
     if (response.status < 200 || response.status >= 300) throw new Error("网络错误" + response.status);
     let result = await response.json();
     if (result == null || result == undefined || result.code != "0"){
         console.warn("未获取到课程信息", response);
+        throw new Error(result);
         return null;
     }
     if (result.datas.cxxszhxqkb == undefined || result.datas.cxxszhxqkb.extParams.msg.indexOf("成功") == -1 ){
         console.warn("未获取到课程信息", response);
+        throw new Error(result);
         return null;
     }
     return result.datas.cxxszhxqkb;
