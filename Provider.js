@@ -11,7 +11,7 @@ async function scheduleHtmlProvider(iframeContent = "", frameContent = "", dom =
         check = dom.getElementsByTagName("title");
         check = check[0].innerText;
     }catch(error){
-        await AIScheduleAlert("出现错误","请确认当前页面显示了课表，如仍有错误，请联系开发者QQ1354457997。" + error);
+        await AIScheduleAlert("出现错误","请确认当前页面显示了课表." + error);
         console.error(error);
         return "do not continue";
     }

@@ -1,6 +1,6 @@
 /*
    此文件是HEU_Timetable_Parser的一部分，用于（2022）新教务系统导入，应配
-   合Parser_JZJW使用。
+   合Parser_JZJW、Timer_JZJW使用。
    This file is a part of OpaqueGlass/HEU_Timetable_Parser PROJECT,
    for importing cource information from new EAS (JZJW).
  */
@@ -11,8 +11,7 @@ async function scheduleHtmlProvider() {
         await AIScheduleAlert({
             titleText: '提示', 
             contentText: `导入时将发送网络请求获取课表（而不使用当前网页获取）；如果课程较多，需要等待一段时间，大概少于1分钟；
-            请您理解，由于课表多样，此项目可能无法适配您的课表。
-            如遇到问题，您可以通过QQ联系开发者反馈，1354457997（请附上课程列表截图和错误信息）。感谢使用。
+            请您理解，由于课表多样、教务系统变化较快，此项目可能无法适配您的课表。
             本课表导入项目开源地址：https://github.com/OpaqueGlass/HEU_Timetable_Parser。`, 
             confirmText: '确认', 
         });
@@ -41,7 +40,7 @@ async function scheduleHtmlProvider() {
         console.error(err);
         await AIScheduleAlert({
             titleText: '获取课程时发生错误',
-            contentText: "如果可以，请将错误信息和课表发送给开发者（Q1354457997）："+err,
+            contentText: "错误详情："+err,
             confirmText: '确认',
         });
         return "do not continue"
@@ -84,6 +83,14 @@ async function getOnePage(pageNum, term){
         },
         "body": `XNXQDM=${term}&pageSize=40&pageNumber=${pageNum}`
     });
+    if (response.status == 403) {
+        await AIScheduleAlert({
+            titleText: '获取课程时发生错误',
+            contentText: "错误详情：403 无权访问课表页面",
+            confirmText: '确认',
+        });
+        return {"nodata": true, "totalSize": 0};
+    }
     if (response.status < 200 || response.status >= 300) throw new Error("网络错误" + response.status);
     let result = await response.json();
     if (result == null || result == undefined || result.code != "0"){

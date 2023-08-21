@@ -1,13 +1,5 @@
 # HEU_Timetable_Parser_in_Xiaoai
 
-
-
-## 最近更新
-
-2022-10-5
-
-- 修复：工程实践课表过渡期导入失败的问题；（测试功能）
-
 ## 概述
 
 此脚本用于将教务系统网页html文本转换为小爱课程表可以理解的课程对象。
@@ -16,20 +8,42 @@
 
 因为本人的技术不高、完全是小白，这里展示的代码有较多的冗余，但也希望这能作为适配其他学校教务系统的参考。
 
-**Holit/HEU_edusys_miui**项目: HEU本科生教务系统在小爱的导入**比本项目更加稳定**，请前往
-https://github.com/Holit/HEU_edusys_miui
-了解。
+### 反馈bug || 继续维护 ?
+
+感谢你访问到这里，可能你在导入课表时遇到了一些问题，但抱歉，此项目已经不再、也无法继续维护（教务系统对我已经403了）。
+
+作为替代，Wakeup课程表是一个优秀的课表App，你可以尝试使用那个。
+
+当然，如果还想使用小爱课表，可以换一个导入项目（例如：[Holit大佬开发的](https://github.com/Holit/HEU_edusys_miui)）、联系其他开发大佬或自己新开一个适配项目。
+
+Javascript入门很简单，即使你的专业和计算机关系不大，也可以轻松开始（[MDN文档](https://developer.mozilla.org/zh-CN/docs/learn/JavaScript)）。
+
+除了基本的函数、变量知识以外，为了修复bug（或者重新写个新的），你可能还需要参考的一些文档：
+
+- Fetch https://developer.mozilla.org/zh-CN/docs/Web/API/Fetch_API/Using_Fetch
+
+- 小爱课程表开发者工具使用教程（其中也有视频教程） https://open-schedule-prod.ai.xiaomi.com/docs/#/help/
+
+如果你打算获取课表页面的相关信息，而不是通过网络请求，可能还需要参考：
+
+- CSS选择器 https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_Selectors
+
+- [jQuery](https://www.runoob.com/jquery/jquery-tutorial.html)
+  （个人认为用`document.querySelectorAll()`能胜任大多数情况）
+
+- https://www.cnblogs.com/holittech/p/miui_schedule_document.html
 
 ### 文件组成
 
 ```
 -  LICENSE 开源协议
--  Parser_withPracticeLesson.js 解析理论课表+工程实践课表
--  Parse_5lesson.js 按大节解析理论课表
--  Provider.js 截取课表网页内容
--  Provider_withPracticeLesson.js 截取课表网页内容、请求理论课表
--  Parser_JZJW.js 解析教务系统返回的课程信息（2022金智教务）
--  Provider_JZJW.js 向教务系统发送POST请求课程信息（2022金智教务）
+-  Parser_withPracticeLesson.js （强智+金智混合导入）解析理论课表+工程实践课表【已过时】
+-  Parse_5lesson.js （旧教务，强智教务）按大节解析理论课表【已过时】
+-  Provider.js （旧教务，强智教务）截取课表网页内容【已过时】
+-  Provider_withPracticeLesson.js （旧教务，强智教务）截取课表网页内容、请求理论课表【已过时】
+-  Parser_JZJW.js 解析教务系统返回的课程信息【2022金智教务】
+-  Provider_JZJW.js 向教务系统发送POST请求课程信息【2022金智教务】
+-  Timer_JZJW.js 返回课程时间表（通用）
 -  README.md 说明文档
 ```
 

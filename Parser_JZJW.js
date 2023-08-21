@@ -1,6 +1,6 @@
 /*
    此文件是HEU_Timetable_Parser的一部分，用于（2022）新教务系统导入，应配
-   合Provider_JZJW使用。
+   合Provider_JZJW、Timer_JZJW使用。
    This file is a part of  OpaqueGlass/HEU_Timetable_Parser PROJECT,
    for importing cource information from new EAS (JZJW).
  */
@@ -13,6 +13,9 @@ function scheduleHtmlParser(html) {
     let result = new Array();
     try{
         let rawClassInfos = JSON.parse(html);
+        if (rawClassInfos == null || rawClassInfos == undefined || rawClassInfos.length == 0){
+            throw new Error("未获取到课程信息");
+        }
         rawClassInfos.forEach(function(current){
             let temp = {
                 name: current.KCM, // 课程名称
@@ -28,8 +31,8 @@ function scheduleHtmlParser(html) {
         console.error(err);
         let bugReport = [{
             name: "抱歉，处理课程时出现错误>_<",
-            position: "如果可以，请将错误信息发送给开发者",
-            teacher: "QQ1354457997",
+            position: "请尝试使用其他导入项目(ToT)/~~~ ",
+            teacher: "og",
             weeks: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],
             day: 1,
             sections: [1,2,3,4,5],

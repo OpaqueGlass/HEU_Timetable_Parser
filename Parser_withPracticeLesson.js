@@ -56,8 +56,8 @@ function scheduleHtmlParser(html){
     }catch(err){
         let bugReport = [{
             name: "抱歉，处理课程时出现错误>_<",
-            position: "如果可以，请将错误信息发送给开发者",
-            teacher: "QQ1354457997",
+            position: "a ",
+            teacher: "a ",
             weeks: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],
             day: 1,
             sections: [1,2,3,4,5],
